@@ -34,7 +34,7 @@ with wave.open(filename, 'wb') as wf:
     wf.setsampwidth(2)  # 2 bytes per sample (16 bits)
     wf.setframerate(sample_rate)
     wf.writeframes(waveform.tobytes())
-
+# yo daya's here
 # Playback the generated audio
 p = pyaudio.PyAudio()
 stream = p.open(format=pyaudio.paInt16,
