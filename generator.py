@@ -3,7 +3,7 @@ import pyaudio
 import wave
 
 # Parameters for the audio
-sample_rate = 44100  # Sample rate in Hz
+sample_rate = 88200  # Sample rate in Hz
 duration = 1.0       # Duration of each bit in seconds
 frequency = 250   #  of the tone in Hz
 amplitude = 0.5      # Amplitude of the waveform

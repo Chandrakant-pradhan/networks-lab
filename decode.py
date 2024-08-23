@@ -3,7 +3,7 @@ import wave
 #nimish joined
 
 # Parameters for decoding
-sample_rate = 44100  # Sample rate in Hz
+sample_rate = 88200  # Sample rate in Hz
 duration = 1.0       # Duration of each bit in seconds
 frequency = 250    # Frequency of the tone in Hz
 
