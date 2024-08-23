@@ -1,6 +1,6 @@
 import numpy as np
 import wave
-#hi
+#nimish joined
 
 # Parameters for decoding
 sample_rate = 44100  # Sample rate in Hz
