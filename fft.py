@@ -27,6 +27,35 @@ window_size = 1024
 hop_size = 512
 
 frequencies, times, Zxx = stft(waveform, fs=RATE, nperseg=window_size, noverlap=window_size - hop_size)
+# print(f"Zxx are: {Zxx}")
+
+
+
+# Threshold for detection (you can adjust this value)
+magnitude_threshold = 0.04 # Magnitude threshold for considering a frequency detected
+
+# List to store detected frequencies in each time interval
+detected_frequencies = []
+
+# Loop over time intervals
+for i, time in enumerate(times):
+    if np.isclose(time % 1, 0, atol=hop_size/RATE):  # Check if time is close to a multiple of 1 second
+        # Get the magnitudes at the current time step
+        magnitudes = np.abs(Zxx[:, i])
+        
+        # Get the indices of frequencies with magnitudes above the threshold
+        detected_indices = np.where(magnitudes > magnitude_threshold)[0]
+        
+        # Get the corresponding frequencies
+        detected_freqs = frequencies[detected_indices]
+        
+        # Store the detected frequencies for this time interval
+        detected_frequencies.append(detected_freqs)
+
+        # Print detected frequencies for this time interval
+        print(f"Time {time:.2f}s: Detected Frequencies: {detected_freqs}")
+
+
 
 # Step 3: Plot the STFT result (Spectrogram)
 plt.figure(figsize=(10, 6))
