@@ -9,14 +9,17 @@ frequency = 250   #  of the tone in Hz
 amplitude = 0.5      # Amplitude of the waveform
 
 # Example bitstring
-bitstring = "10101000111111000000000001110000000111111"
+bitstring = "1011" * 5
+
+frequency1 = 880
+frequency0 = 440
 
 # Convert bitstring to waveform
 def bitstring_to_waveform(bitstring, sample_rate, duration, frequency, amplitude):
     t = np.linspace(0, duration, int(sample_rate * duration), endpoint=False)
     waveform = np.concatenate([
-        amplitude * np.sin(2 * np.pi * frequency * t) if bit == '1' 
-        else -1*amplitude * np.sin(2 * np.pi * frequency * t)
+        amplitude * np.sin(2 * np.pi * frequency1 * t) if bit == '1' 
+        else -1 *  amplitude * np.sin(2 * np.pi * frequency0 * t)
         for bit in bitstring
     ])
     return waveform

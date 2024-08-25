@@ -4,9 +4,9 @@ import wave
 # Parameters for recording
 FORMAT = pyaudio.paInt16  # Audio format (16-bit PCM)
 CHANNELS = 1  # Number of audio channels (stereo)
-RATE = 44100  # Sample rate (44.1kHz)
+RATE = 88200  # Sample rate (44.1kHz)
 CHUNK = 1024  # Size of each audio chunk
-RECORD_SECONDS = 15 # Duration of recording
+RECORD_SECONDS = 25 # Duration of recording
 OUTPUT_FILENAME = "output.wav"  # Output file name
 
 # Initialize PyAudio
