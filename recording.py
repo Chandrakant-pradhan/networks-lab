@@ -5,6 +5,14 @@ import numpy as np
 import pyaudio
 import wave
 
+#functions
+def strToDec(s):
+     ans = 0
+     for i in range(5):
+         if(s[i] == '1'):
+             ans += (1 << i)
+     return ans
+
 # Parameters for recording
 FORMAT = pyaudio.paInt16  # Audio format (16-bit PCM)
 CHANNELS = 1  # Number of audio channels (stereo)
@@ -87,7 +95,23 @@ for i, time in enumerate(times):
         else:
             print(f"Time {time:.2f}s: 0 (Max Frequency: {max_freq:.2f} Hz)"); received_message += "0"
 
-print(received_message)
+
+n = len(received_message)
+i = 0
+while(i<n):
+   if(received_message[i : i+6] == '101011'):
+       break
+   else:
+       i += 1
+
+lenBits = received_message[i+6 : i+11]
+lengthOfMessage = strToDec(lenBits)
+error_message = received_message[i+11 : i + 11 + lengthOfMessage]
+
+
+print(lengthOfMessage)
+print(error_message)
+
 # Step 3: Plot the STFT result (Spectrogram)
 plt.figure(figsize=(10, 6))
 plt.pcolormesh(times, frequencies, np.abs(Zxx), shading='gouraud')

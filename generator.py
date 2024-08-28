@@ -11,6 +11,9 @@ def decTobitstring(n):
         else:
             str += '1'
         n = n // 2
+    
+    length = len(str)
+    str += "0"*(5-length)
     return str[::-1]
 
 # Parameters for the audio
