@@ -32,7 +32,7 @@ frequencies, times, Zxx = stft(waveform, fs=RATE, nperseg=window_size, noverlap=
 
 
 # Threshold for detection (you can adjust this value)
-magnitude_threshold = 0.04 # Magnitude threshold for considering a frequency detected
+magnitude_threshold = 0.0001 # Magnitude threshold for considering a frequency detected
 
 # List to store detected frequencies in each time interval
 detected_frequencies = []
@@ -43,17 +43,39 @@ for i, time in enumerate(times):
         # Get the magnitudes at the current time step
         magnitudes = np.abs(Zxx[:, i])
         
+        # # Get the indices of frequencies with magnitudes above the threshold
+        # detected_indices = np.where(magnitudes > magnitude_threshold)[0]
+        
+        # # Get the corresponding frequencies
+        # detected_freqs = frequencies[detected_indices]
+        
+        # # Store the detected frequencies for this time interval
+        # detected_frequencies.append(detected_freqs)
+
+        # # Print detected frequencies for this time interval
+        # # print(f"Time {time:.2f}s: Detected Frequencies: {detected_freqs}")
+        # if detected_frequencies.max()> 8000 :
+        #     print(f"Time {time:.2f}s: Detected bit : 1")
+        # else :
+        #     print(f"Time {time:.2f}s: Detected bit : 0")
+
         # Get the indices of frequencies with magnitudes above the threshold
         detected_indices = np.where(magnitudes > magnitude_threshold)[0]
         
-        # Get the corresponding frequencies
-        detected_freqs = frequencies[detected_indices]
-        
-        # Store the detected frequencies for this time interval
-        detected_frequencies.append(detected_freqs)
-
-        # Print detected frequencies for this time interval
-        print(f"Time {time:.2f}s: Detected Frequencies: {detected_freqs}")
+        if detected_indices.size > 0:
+            # Get the corresponding frequencies
+            detected_freqs = frequencies[detected_indices]
+            
+            # Determine the maximum frequency detected at this time step
+            max_freq = np.max(detected_freqs)
+        else:
+            max_freq = 0  # No significant frequency detected
+            
+        # Print 1 if the maximum frequency is greater than 8000 Hz, else print 0
+        if max_freq > 8000:
+            print(f"Time {time:.2f}s: 1 (Max Frequency: {max_freq:.2f} Hz)")
+        else:
+            print(f"Time {time:.2f}s: 0 (Max Frequency: {max_freq:.2f} Hz)")
 
 
 
