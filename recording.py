@@ -87,6 +87,7 @@ for i, time in enumerate(times):
         else:
             print(f"Time {time:.2f}s: 0 (Max Frequency: {max_freq:.2f} Hz)"); received_message += "0"
 
+print(received_message)
 # Step 3: Plot the STFT result (Spectrogram)
 plt.figure(figsize=(10, 6))
 plt.pcolormesh(times, frequencies, np.abs(Zxx), shading='gouraud')

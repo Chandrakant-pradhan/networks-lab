@@ -26,6 +26,7 @@ a, b = map(float, input().split())
 
 def addPreamble(bitstring):
     message = "101010101011" + decTobitstring(len(bitstring)) + bitstring
+    return message
 
 # Convert bitstring to waveform
 def bitstring_to_waveform(bitstring, sample_rate, duration, freq1, freq0, amplitude):
@@ -38,7 +39,8 @@ def bitstring_to_waveform(bitstring, sample_rate, duration, freq1, freq0, amplit
     return waveform
 
 # Create waveform from bitstring
-waveform = bitstring_to_waveform(bitstring, sample_rate, duration, frequency1, frequency0, amplitude)
+finalmessage = addPreamble(bitstring)
+waveform = bitstring_to_waveform(finalmessage, sample_rate, duration, frequency1, frequency0, amplitude)
 
 # Normalize waveform to 16-bit PCM format
 waveform = np.int16(waveform * 32767)
