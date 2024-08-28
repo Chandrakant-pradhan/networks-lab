@@ -8,6 +8,7 @@ import wave
 #functions
 def strToDec(s):
      ans = 0
+     s = s[::-1]
      for i in range(5):
          if(s[i] == '1'):
              ans += (1 << i)
