@@ -2,30 +2,43 @@ import numpy as np
 import pyaudio
 import wave
 
+#functions 
+def decTobitstring(n):
+    str = ""
+    while(n > 0):
+        if(n%2 == 0):
+            str += '0'
+        else:
+            str += '1'
+        n = n // 2
+    return str[::-1]
+
 # Parameters for the audio
 sample_rate = 88200  # Sample rate in Hz
 duration = 1.0       # Duration of each bit in seconds
-frequency = 250   #  of the tone in Hz
+frequency1 = 8000   # frequency for bit = 1
+frequency0 = 4000   # frequency for bit = 0
 amplitude = 0.5      # Amplitude of the waveform
 
 # Example bitstring
-bitstring = "1011" * 5
+bitstring = input()
+a, b = map(float, input().split())
 
-frequency1 = 880
-frequency0 = 440
+def addPreamble(bitstring):
+    message = "101010101011" + decTobitstring(len(bitstring)) + bitstring
 
 # Convert bitstring to waveform
-def bitstring_to_waveform(bitstring, sample_rate, duration, frequency, amplitude):
+def bitstring_to_waveform(bitstring, sample_rate, duration, freq1, freq0, amplitude):
     t = np.linspace(0, duration, int(sample_rate * duration), endpoint=False)
     waveform = np.concatenate([
-        amplitude * np.sin(2 * np.pi * frequency1 * t) if bit == '1' 
-        else -1 *  amplitude * np.sin(2 * np.pi * frequency0 * t)
+        amplitude * np.sin(2 * np.pi * freq1 * t) if bit == '1' 
+        else -1 *  amplitude * np.sin(2 * np.pi * freq0 * t)
         for bit in bitstring
     ])
     return waveform
 
 # Create waveform from bitstring
-waveform = bitstring_to_waveform(bitstring, sample_rate, duration, frequency, amplitude)
+waveform = bitstring_to_waveform(bitstring, sample_rate, duration, frequency1, frequency0, amplitude)
 
 # Normalize waveform to 16-bit PCM format
 waveform = np.int16(waveform * 32767)
@@ -37,7 +50,7 @@ with wave.open(filename, 'wb') as wf:
     wf.setsampwidth(2)  # 2 bytes per sample (16 bits)
     wf.setframerate(sample_rate)
     wf.writeframes(waveform.tobytes())
-# yo daya's here
+
 # Playback the generated audio
 p = pyaudio.PyAudio()
 stream = p.open(format=pyaudio.paInt16,
