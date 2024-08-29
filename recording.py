@@ -14,6 +14,47 @@ def strToDec(s):
              ans += (1 << i)
      return ans
 
+def xor(a, b):
+    # Perform XOR operation between two binary strings
+    result = []
+    for i in range(1, len(b)):
+        result.append(str(int(a[i]) ^ int(b[i])))
+    return ''.join(result)
+
+def mod2div(dividend, divisor):
+    # Performs Modulo-2 division
+    pick = len(divisor)
+    tmp = dividend[0:pick]
+
+    while pick < len(dividend):
+        if tmp[0] == '1':
+            tmp = xor(divisor, tmp) + dividend[pick]
+        else:
+            tmp = xor('0'*pick, tmp) + dividend[pick]
+        pick += 1
+
+    if tmp[0] == '1':
+        tmp = xor(divisor, tmp)
+    else:
+        tmp = xor('0'*pick, tmp)
+
+    return tmp
+def bitflip(message,i):
+    return message[:i] + str(1 - int(message[i])) + message[i+1:]
+
+def error_correction(error_message):
+    for i in range(len(error_message)):
+        message = bitflip(error_message,i)
+        if mod2div(message,GENERATOR) == "0" * (len(GENERATOR) - 1):
+            return message[:-len(GENERATOR)]
+    for i in range(len(error_message)):
+        for j in range(i+1,len(error_message)):
+            message = bitflip(error_message,i)
+            message = bitflip(message,j)
+            if mod2div(message,GENERATOR) == "0" * (len(GENERATOR) - 1):
+                return message[:-len(GENERATOR)]
+        
+
 # Parameters for recording
 FORMAT = pyaudio.paInt16  # Audio format (16-bit PCM)
 CHANNELS = 1  # Number of audio channels (stereo)
@@ -21,6 +62,7 @@ RATE = 88200  # Sample rate (44.1kHz)
 CHUNK = 1024  # Size of each audio chunk
 RECORD_SECONDS = 50 # Duration of recording
 OUTPUT_FILENAME = "output.wav"  # Output file name
+GENERATOR = "010111010111"
 
 # Initialize PyAudio
 audio = pyaudio.PyAudio()
@@ -91,7 +133,7 @@ for i, time in enumerate(times):
             max_freq = 0  # No significant frequency detected
             
         # Print 1 if the maximum frequency is greater than 8000 Hz, else print 0
-        if max_freq > 8000:
+        if max_freq > 19000:
             print(f"Time {time:.2f}s: 1 (Max Frequency: {max_freq:.2f} Hz)"); received_message += "1"
         else:
             print(f"Time {time:.2f}s: 0 (Max Frequency: {max_freq:.2f} Hz)"); received_message += "0"
@@ -105,13 +147,13 @@ while(i<n):
    else:
        i += 1
 
-lenBits = received_message[i+6 : i+11]
+lenBits = received_message[i + 6 : i + 11]
 lengthOfMessage = strToDec(lenBits)
 error_message = received_message[i+11 : i + 11 + lengthOfMessage]
 
-
+corrected_message = error_correction(error_message)
 print(lengthOfMessage)
-print(error_message)
+print(corrected_message)
 
 # Step 3: Plot the STFT result (Spectrogram)
 plt.figure(figsize=(10, 6))

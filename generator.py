@@ -16,12 +16,47 @@ def decTobitstring(n):
     str += "0"*(5-length)
     return str[::-1]
 
+def xor(a, b):
+    # Perform XOR operation between two binary strings
+    result = []
+    for i in range(1, len(b)):
+        result.append(str(int(a[i]) ^ int(b[i])))
+    return ''.join(result)
+
+def mod2div(dividend, divisor):
+    # Performs Modulo-2 division
+    pick = len(divisor)
+    tmp = dividend[0:pick]
+
+    while pick < len(dividend):
+        if tmp[0] == '1':
+            tmp = xor(divisor, tmp) + dividend[pick]
+        else:
+            tmp = xor('0'*pick, tmp) + dividend[pick]
+        pick += 1
+
+    if tmp[0] == '1':
+        tmp = xor(divisor, tmp)
+    else:
+        tmp = xor('0'*pick, tmp)
+
+    return tmp
+
+def encode_data(data, key):
+    # Append zero bits equivalent to the length of the key minus 1
+    appended_data = data + '0'*(len(key)-1)
+    remainder = mod2div(appended_data, key)
+    crc = remainder
+
+    return data + crc
+
 # Parameters for the audio
 sample_rate = 88200  # Sample rate in Hz
 duration = 1.0       # Duration of each bit in seconds
 frequency1 = 8000   # frequency for bit = 1
 frequency0 = 4000   # frequency for bit = 0
 amplitude = 0.5      # Amplitude of the waveform
+GENERATOR = "010111010111"
 
 # Example bitstring
 bitstring = input()
@@ -42,7 +77,8 @@ def bitstring_to_waveform(bitstring, sample_rate, duration, freq1, freq0, amplit
     return waveform
 
 # Create waveform from bitstring
-finalmessage = addPreamble(bitstring)
+message = encode_data(bitstring,GENERATOR)
+finalmessage = addPreamble(message)
 waveform = bitstring_to_waveform(finalmessage, sample_rate, duration, frequency1, frequency0, amplitude)
 
 # Normalize waveform to 16-bit PCM format
