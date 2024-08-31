@@ -43,6 +43,9 @@ def mod2div(dividend, divisor):
 
     return tmp
 
+def bitflip(message,i):
+    return message[:i] + str(1 - int(message[i])) + message[i+1:]
+
 def encode_data(data, key):
     # Append zero bits equivalent to the length of the key minus 1
     appended_data = data + '0'*(len(key)-1)
@@ -54,8 +57,8 @@ def encode_data(data, key):
 # Parameters for the audio
 sample_rate = 88200  # Sample rate in Hz
 duration = 1.0       # Duration of each bit in seconds
-frequency1 = 8000   # frequency for bit = 1
-frequency0 = 4000   # frequency for bit = 0
+frequency1 = 20000   # frequency for bit = 1
+frequency0 = 10000   # frequency for bit = 0
 amplitude = 0.5      # Amplitude of the waveform
 GENERATOR = "010111010111"
 
@@ -89,6 +92,8 @@ def bitstring_to_waveform(bitstring, sample_rate, duration, freq1, freq0, amplit
 # Create waveform from bitstring
 message = encode_data(bitstring,GENERATOR)
 finalmessage = addPreamble(message)
+finalmessage = bitflip(finalmessage, 20)
+finalmessage = bitflip(finalmessage, 40)
 waveform = bitstring_to_waveform(finalmessage, sample_rate, duration, frequency1, frequency0, amplitude)
 
 # Normalize waveform to 16-bit PCM format
