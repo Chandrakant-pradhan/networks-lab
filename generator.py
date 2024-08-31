@@ -62,9 +62,15 @@ GENERATOR = "010111010111"
 # Example bitstring
 bitstring = input()
 a, b = map(float, input().split())
+
+#adding error
 n = len(bitstring)
-ind1 = math.ceil(n*a) - 1
-ind2 = math.ceil(n*b) - 1
+ind1 = np.ceil(n*a) - 1
+ind2 = np.ceil(n*b) - 1
+bitflip(bitstring , ind1)
+if(b != 0):
+    bitflip(bitstring , ind2)
+
 
 def addPreamble(bitstring):
     message = "101010101011" + decTobitstring(len(bitstring)) + bitstring
