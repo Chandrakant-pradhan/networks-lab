@@ -1,6 +1,7 @@
 import numpy as np
 import pyaudio
 import wave
+import math
 
 #functions 
 def decTobitstring(n):
@@ -61,6 +62,9 @@ GENERATOR = "010111010111"
 # Example bitstring
 bitstring = input()
 a, b = map(float, input().split())
+n = len(bitstring)
+ind1 = math.ceil(n*a) - 1
+ind2 = math.ceil(n*b) - 1
 
 def addPreamble(bitstring):
     message = "101010101011" + decTobitstring(len(bitstring)) + bitstring
