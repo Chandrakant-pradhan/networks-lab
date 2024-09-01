@@ -14,15 +14,15 @@ def strToDec(s):
              ans += (1 << i)
      return ans
 
+# Perform XOR operation between two binary strings
 def xor(a, b):
-    # Perform XOR operation between two binary strings
     result = []
     for i in range(1, len(b)):
         result.append(str(int(a[i]) ^ int(b[i])))
     return ''.join(result)
 
+# Performs Modulo-2 division
 def mod2div(dividend, divisor):
-    # Performs Modulo-2 division
     pick = len(divisor)
     tmp = dividend[0:pick]
 
@@ -39,29 +39,34 @@ def mod2div(dividend, divisor):
         tmp = xor('0'*pick, tmp)
 
     return tmp
+
+#flip ith bit of message
 def bitflip(message,i):
     return message[:i] + str(1 - int(message[i])) + message[i+1:]
 
+#error correction
 def error_correction(error_message):
+    if mod2div(error_message,GENERATOR) == "0" * (len(GENERATOR) - 1):
+        return error_message, None
     for i in range(len(error_message)):
         message = bitflip(error_message,i)
         if mod2div(message,GENERATOR) == "0" * (len(GENERATOR) - 1):
-            return message[:-len(GENERATOR)]
+            return message[:-len(GENERATOR) + 1],[i] 
     for i in range(len(error_message)):
         for j in range(i+1,len(error_message)):
             message = bitflip(error_message,i)
             message = bitflip(message,j)
             if mod2div(message,GENERATOR) == "0" * (len(GENERATOR) - 1):
-                return message[:-len(GENERATOR)]
+                return message[:-len(GENERATOR) + 1],[i,j]
         
 
 # Parameters for recording
-FORMAT = pyaudio.paInt16  # Audio format (16-bit PCM)
-CHANNELS = 1  # Number of audio channels (stereo)
-RATE = 88200  # Sample rate (44.1kHz)
-CHUNK = 1024  # Size of each audio chunk
-RECORD_SECONDS = 50 # Duration of recording
-OUTPUT_FILENAME = "output.wav"  # Output file name
+FORMAT = pyaudio.paInt16  
+CHANNELS = 1  
+RATE = 88200 
+CHUNK = 1024  
+RECORD_SECONDS = 55 
+OUTPUT_FILENAME = "output.wav"  
 GENERATOR = "010111010111"
 
 # Initialize PyAudio
@@ -73,14 +78,12 @@ stream = audio.open(format=FORMAT, channels=CHANNELS,
                     frames_per_buffer=CHUNK)
 
 print("Recording...")
-
 frames = []
 
 # Record for the specified number of seconds
 for _ in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
     data = stream.read(CHUNK)
     frames.append(data)
-
 print("Finished recording.")
 
 # Stop and close the stream
@@ -96,19 +99,18 @@ with wave.open(OUTPUT_FILENAME, 'wb') as wf:
     wf.writeframes(b''.join(frames))
 
 print(f"Audio saved to {OUTPUT_FILENAME}")
-
 with wave.open(OUTPUT_FILENAME, 'rb') as wf:
     n_frames = wf.getnframes()
     waveform = np.frombuffer(wf.readframes(n_frames), dtype=np.int16)
-    waveform = waveform / 32767.0  # Normalize the waveform to -1.0 to 1.0
+    waveform = waveform / 32767.0 
 
 window_size = 1024
 hop_size = 512
 
 frequencies, times, Zxx = stft(waveform, fs=RATE, nperseg=window_size, noverlap=window_size - hop_size)
 
-# Threshold for detection (you can adjust this value)
-magnitude_threshold = 0.0001 # Magnitude threshold for considering a frequency detected
+# Magnitude threshold for considering a frequency detected
+magnitude_threshold = 0.0001 
 
 # List to store detected frequencies in each time interval
 detected_frequencies = []
@@ -116,7 +118,8 @@ detected_frequencies = []
 received_message = ""
 # Loop over time intervals
 for i, time in enumerate(times):
-    if np.isclose(time % 1, 0, atol=hop_size/RATE):  # Check if time is close to a multiple of 1 second
+    if np.isclose(time % 1, 0, atol=hop_size/RATE):  
+        # Check if time is close to a multiple of 1 second
         # Get the magnitudes at the current time step
         magnitudes = np.abs(Zxx[:, i])
 
@@ -133,11 +136,10 @@ for i, time in enumerate(times):
             max_freq = 0  # No significant frequency detected
             
         # Print 1 if the maximum frequency is greater than 8000 Hz, else print 0
-        if max_freq > 19000:
+        if max_freq > 7000:
             print(f"Time {time:.2f}s: 1 (Max Frequency: {max_freq:.2f} Hz)"); received_message += "1"
         else:
             print(f"Time {time:.2f}s: 0 (Max Frequency: {max_freq:.2f} Hz)"); received_message += "0"
-
 
 n = len(received_message)
 i = 0
@@ -150,10 +152,10 @@ while(i<n):
 lenBits = received_message[i + 6 : i + 11]
 lengthOfMessage = strToDec(lenBits)
 error_message = received_message[i+11 : i + 11 + lengthOfMessage]
-
-corrected_message = error_correction(error_message)
-print(lengthOfMessage)
-print(corrected_message)
+corrected_message,erorr_pos = error_correction(error_message)
+print("length of the encoded message:", lengthOfMessage, "length of original message:",lengthOfMessage - len(GENERATOR) + 1)
+print("Error Positions:", erorr_pos)
+print("Corrected original message:" , corrected_message)
 
 # Step 3: Plot the STFT result (Spectrogram)
 plt.figure(figsize=(10, 6))
@@ -162,5 +164,3 @@ plt.title('STFT Spectrogram')
 plt.ylabel('Frequency [Hz]')
 plt.xlabel('Time [s]')
 plt.colorbar(label='Magnitude')
-plt.show()
-# code ended
