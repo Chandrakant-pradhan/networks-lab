@@ -127,5 +127,4 @@ stream.write(waveform.tobytes())
 stream.stop_stream()
 stream.close()
 p.terminate()
-
 print(f"Audio has been saved to {filename} and played back.")
