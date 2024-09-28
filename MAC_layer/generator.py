@@ -2,8 +2,16 @@ import numpy as np
 import pyaudio
 import wave
 
+#Parameters for the audio
+sample_rate = 88200  
+duration = 1     
+frequency1 = 8000 
+frequency0 = 4000 
+amplitude = 0.5     
+GENERATOR = "010111010111"
+
 #num to string
-def decTobitstring(n):
+def decTobitstring(n , noOfBits):
     str = ""
     while(n > 0):
         if(n%2 == 0):
@@ -13,7 +21,7 @@ def decTobitstring(n):
         n = n // 2
     
     length = len(str)
-    str += "0"*(5-length)
+    str += "0"*(noOfBits-length)
     return str[::-1]
 
 #flip ith bit of message
@@ -47,28 +55,16 @@ def mod2div(dividend, divisor):
     return tmp
 
 #Append zero bits equivalent to the length of the key minus 1
-def encode_data(data, key):
-    appended_data = data + '0'*(len(key)-1)
-    remainder = mod2div(appended_data, key)
+def encode_data(data):
+    appended_data = data + '0'*(len(GENERATOR)-1)
+    remainder = mod2div(appended_data, GENERATOR)
     crc = remainder
-
     return data + crc
 
-#Parameters for the audio
-sample_rate = 88200  
-duration = 1     
-frequency1 = 8000 
-frequency0 = 4000 
-amplitude = 0.5     
-GENERATOR = "010111010111"
-
-#input
-bitstring = input()
-a, b = map(float, input().split())
-
 #adding the preamble
-def addPreamble(bitstring):
-    message = "101010101010101011" + decTobitstring(len(bitstring)) + bitstring
+def addPreamble(bitstring , senderMAC , destMAC):
+    #+4 for including the length of the 2 bit mac addresses
+    message = "101010101010101011" + decTobitstring(len(bitstring) + 4 , 5) + decTobitstring(int(senderMAC) , 2) + decTobitstring(int(destMAC) , 2) + bitstring
     return message
 
 #Convert bitstring to waveform
@@ -81,50 +77,25 @@ def bitstring_to_waveform(bitstring, sample_rate, duration, freq1, freq0, amplit
     ])
     return waveform
 
-#Create waveform from bitstring
-message = encode_data(bitstring,GENERATOR)
-n = len(message)
-ind1 = int(n*a)-1
-ind2 = int(n*b)-1
-errMessage = bitflip(message , ind1)
-if(b != 0):
-    errMessage = bitflip(errMessage , ind2)
-finalmessage = addPreamble(errMessage)
-
-#printing things
-print("original message : " , bitstring)
-print("length of message : " , len(bitstring))
-print("error index 1 : " , ind1)
-if(b != 0):
-    print("error index 2 : " , ind2)
-print("final message sent : ",finalmessage)
-
-#creating waveforms
-waveform = bitstring_to_waveform(finalmessage, sample_rate, duration, frequency1, frequency0, amplitude)
-
-#Normalize waveform to 16-bit PCM format
-waveform = np.int16(waveform * 32767)
-
-#Save waveform to a WAV file
-filename = "output.wav"
-with wave.open(filename, 'wb') as wf:
-    wf.setnchannels(1)
-    wf.setsampwidth(2)  
-    wf.setframerate(sample_rate)
-    wf.writeframes(waveform.tobytes())
-
-#Playback the generated audio
-p = pyaudio.PyAudio()
-stream = p.open(format=pyaudio.paInt16,
-                channels=1,
-                rate=sample_rate,
-                output=True)
-
-#Play the waveform
-stream.write(waveform.tobytes())
-
-#Cleanup
-stream.stop_stream()
-stream.close()
-p.terminate()
-print(f"Audio has been saved to {filename} and played back.")
+#send message
+def sendMsg(message):
+    waveform = bitstring_to_waveform(message, sample_rate, duration, frequency1, frequency0, amplitude)
+    waveform = np.int16(waveform * 32767)
+    filename = "output.wav"
+    with wave.open(filename, 'wb') as wf:
+        wf.setnchannels(1)
+        wf.setsampwidth(2)  
+        wf.setframerate(sample_rate)
+        wf.writeframes(waveform.tobytes())
+    
+    p = pyaudio.PyAudio()
+    stream = p.open(format=pyaudio.paInt16,
+                    channels=1,
+                    rate=sample_rate,
+                    output=True)
+    
+    stream.write(waveform.tobytes())
+    stream.stop_stream()
+    stream.close()
+    p.terminate()
+    print(f"Audio has been saved to {filename} and played back.")
