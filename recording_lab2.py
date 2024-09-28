@@ -100,7 +100,7 @@ window_size = 1024
 hop_size = 512
 
 #FFT for frequency detection using STFT
-frequencies, times, Zxx = stft(waveform, fs=RATE, nperseg=window_size, noverlap=window_size - hop_size)
+frequencies, times, Zxx = stft(waveform, fs=RATE, nperseg=window_size, noverlap0=window_size - hop_size)
 magnitude_threshold = 0.0001 
 detected_frequencies = []
 received_message = ""

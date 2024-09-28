@@ -92,37 +92,40 @@ def carrierSense(waitTime):
                         rate=RATE, input=True,
                         frames_per_buffer=CHUNK)
     print("Carrier Sensing. Wait ...")
-    frames = []
+    frames = []; i = 0
     for _ in range(0, int(RATE / CHUNK * waitTime)):
         data = stream.read(CHUNK)
         frames.append(data)
         if len(frames) >= CHUNKS_PER_INTERVAL:
             # Concatenate the chunks in the buffer
             combined_data = b''.join(frames)
-            frames = []
             
             # Convert the byte data to NumPy array for processing
             audio_data = np.frombuffer(combined_data, dtype=np.int16)
 
             # Apply STFT (Short-Time Fourier Transform)
-            f, t, Zxx = stft(audio_data, fs=RATE, nperseg=CHUNK)
-            magnitudes = np.abs(Zxx)
+            f, t, Zxx = stft(audio_data, fs=RATE, nperseg= 1024, noverlap=512)
+            magnitudes = np.abs(Zxx[:i]); i += 1
             detected_indices = np.where(magnitudes > THRESHOLD)[0]
             if detected_indices.size > 0:
                 detected_freqs = f[detected_indices]
+                # print(np.max(detected_freqs))
                 max_freq = np.max(detected_freqs)
             else:
                 max_freq = 0
             if max_freq > 12000:
+                print(max_freq)
                 print("Carrier is busy 😭. Received a 1")
                 CARRIER_BUSY = True
                 N = N + 1
                 return False
-            elif max_freq > 7000:
+            elif max_freq > 10000:
+                print(max_freq)
                 print("Carrier is busy 😭. Received a 0")
                 CARRIER_BUSY = True
                 N = N + 1
                 return False
+    print("All clear dude 😎")
     return True
 
 #listen function
