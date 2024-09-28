@@ -1,6 +1,6 @@
 import keyboard,random
-from MAC_layer import generator as gen
-from MAC_layer import recording as rec
+import generator as gen
+import recording as rec
 import time
 
 # input

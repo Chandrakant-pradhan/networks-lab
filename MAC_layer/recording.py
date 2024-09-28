@@ -113,11 +113,11 @@ def carrierSense(waitTime):
                 max_freq = 0
             if max_freq > 12000:
                 print("Carrier is busy 😭. Received a 1")
-                CARRIER_BUSY = True; N = N + 1
+                CARRIER_BUSY = True; N += 1
                 return False
             elif max_freq > 7000:
                 print("Carrier is busy 😭. Received a 0")
-                CARRIER_BUSY = True; N = N + 1
+                CARRIER_BUSY = True; N += 1
                 return False
     return True
 
