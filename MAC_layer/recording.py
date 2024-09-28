@@ -20,7 +20,7 @@ GENERATOR = "010111010111"
 DIFS = 5
 SIFS = 0.5
 CARRIER_BUSY = False
-N = 0
+N_rand = 0
 MAX_WAIT = 10
 MAC = 1 # Change this !! 
 
@@ -72,13 +72,13 @@ def waitACK(dest_MAC, waitTime = SIFS):
             elif max_freq > 7000:
                 ACK += "0"
     if not len(ACK) == 4:
-        N = N + 1
+        N_rand = N_rand + 1
         return False
     else:
         sender = ACK[0:2]
         receiver = ACK[2:]
         if not (sender == gen.decTobitstring(MAC) and receiver == gen.decTobitstring(dest_MAC)):
-            N = N + 1
+            N_rand = N_rand + 1
             return False
         return True
 
