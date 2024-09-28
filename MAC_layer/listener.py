@@ -55,5 +55,10 @@ while True:
         msgString = msg["msg"]
         destMAC = msg["destMAC"]
         gen.sendMsg(frameGenerator(msg))
-        rec.waitACK(destMAC,rec.SIFS)
+        sent = rec.waitACK(destMAC,rec.SIFS)
+        if sent:
+            SendQueue.pop(0)
+        else:
+            print("Transmission failed. Trying again after some time")
+            continue
 

@@ -72,11 +72,13 @@ def waitACK(dest_MAC, waitTime = SIFS):
             elif max_freq > 7000:
                 ACK += "0"
     if not len(ACK) == 4:
+        N = N + 1
         return False
     else:
         sender = ACK[0:2]
         receiver = ACK[2:]
         if not (sender == gen.decTobitstring(MAC) and receiver == gen.decTobitstring(dest_MAC)):
+            N = N + 1
             return False
         return True
 
