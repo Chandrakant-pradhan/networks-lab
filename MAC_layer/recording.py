@@ -4,16 +4,25 @@ from scipy.signal import stft
 import numpy as np
 import pyaudio
 import wave
-from generator import mod2div , sendMsg
+import generator as gen
 
 # Parameters for recording
 FORMAT = pyaudio.paInt16  
 CHANNELS = 1  
 RATE = 88200 
 CHUNK = 1024  
-RECORD_SECONDS = 55 
-OUTPUT_FILENAME = "output_recording.wav"  
+BIT_INTERVAL = 0.1
+CHUNKS_PER_INTERVAL = int(RATE * BIT_INTERVAL / CHUNK) 
+THRESHOLD = 0.0001   
 GENERATOR = "010111010111"
+
+# For CSMA Protocol
+DIFS = 5
+SIFS = 0.5
+CARRIER_BUSY = False
+N = 0
+MAX_WAIT = 10
+MAC = 1 # Change this !! 
 
 #utility for string to number
 def strToDec(s):
@@ -28,50 +37,124 @@ def strToDec(s):
 def sendACK(senderMAC , recieverMAC):
     #both supplied as string of binaries
     finalMessage = senderMAC + recieverMAC
-    sendMsg(finalMessage)
+    gen.sendMsg(finalMessage)
+
+def waitACK(dest_MAC, waitTime = SIFS):
+    audio = pyaudio.PyAudio()
+    stream = audio.open(format=FORMAT, channels=CHANNELS,
+                        rate=RATE, input=True,
+                        frames_per_buffer=CHUNK)
+    print("Waiting for Acknowledgement ...")
+    frames = []
+    ACK = ""
+    for _ in range(0, int(RATE / CHUNK * waitTime)):
+        data = stream.read(CHUNK)
+        frames.append(data)
+        if len(frames) >= CHUNKS_PER_INTERVAL:
+            # Concatenate the chunks in the buffer
+            combined_data = b''.join(frames)
+            
+            # Convert the byte data to NumPy array for processing
+            audio_data = np.frombuffer(combined_data, dtype=np.int16)
+
+            # Apply STFT (Short-Time Fourier Transform)
+            f, t, Zxx = stft(audio_data, fs=RATE, nperseg=CHUNK)
+            magnitudes = np.abs(Zxx)
+            detected_indices = np.where(magnitudes > THRESHOLD)[0]
+            if detected_indices.size > 0:
+                detected_freqs = f[detected_indices]
+                max_freq = np.max(detected_freqs)
+            else:
+                max_freq = 0
+                break
+            if max_freq > 12000:
+                ACK += "1"
+            elif max_freq > 7000:
+                ACK += "0"
+    if not len(ACK) == 4:
+        return False
+    else:
+        sender = ACK[0:2]
+        receiver = ACK[2:]
+        if not (sender == gen.decTobitstring(MAC) and receiver == gen.decTobitstring(dest_MAC)):
+            return False
+        return True
+
 
 #carrier sense
-def carrierSense():
-    return False
+def carrierSense(waitTime):
+    audio = pyaudio.PyAudio()
+    stream = audio.open(format=FORMAT, channels=CHANNELS,
+                        rate=RATE, input=True,
+                        frames_per_buffer=CHUNK)
+    print("Carrier Sensing. Wait ...")
+    frames = []
+    for _ in range(0, int(RATE / CHUNK * waitTime)):
+        data = stream.read(CHUNK)
+        frames.append(data)
+        if len(frames) >= CHUNKS_PER_INTERVAL:
+            # Concatenate the chunks in the buffer
+            combined_data = b''.join(frames)
+            frames = []
+            
+            # Convert the byte data to NumPy array for processing
+            audio_data = np.frombuffer(combined_data, dtype=np.int16)
+
+            # Apply STFT (Short-Time Fourier Transform)
+            f, t, Zxx = stft(audio_data, fs=RATE, nperseg=CHUNK)
+            magnitudes = np.abs(Zxx)
+            detected_indices = np.where(magnitudes > THRESHOLD)[0]
+            if detected_indices.size > 0:
+                detected_freqs = f[detected_indices]
+                max_freq = np.max(detected_freqs)
+            else:
+                max_freq = 0
+            if max_freq > 12000:
+                print("Carrier is busy 😭. Received a 1")
+                CARRIER_BUSY = True; N = N + 1
+                return False
+            elif max_freq > 7000:
+                print("Carrier is busy 😭. Received a 0")
+                CARRIER_BUSY = True; N = N + 1
+                return False
+    return True
 
 #listen function
-def listenMsg():
-   audio = pyaudio.PyAudio()
-   stream = audio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
-   frames = []
+def listenMsg(waitTime):
+    audio = pyaudio.PyAudio()
+    stream = audio.open(format=FORMAT, channels=CHANNELS,
+                        rate=RATE, input=True,
+                        frames_per_buffer=CHUNK)
+    print("Carrier Sensing. Wait ...")
+    frames = []
+    bitString = ""
+    for _ in range(0, int(RATE / CHUNK * waitTime)):
+        data = stream.read(CHUNK)
+        frames.append(data)
+        if len(frames) >= CHUNKS_PER_INTERVAL:
+            # Concatenate the chunks in the buffer
+            combined_data = b''.join(frames)
+            frames = []
+            
+            # Convert the byte data to NumPy array for processing
+            audio_data = np.frombuffer(combined_data, dtype=np.int16)
 
-   for _ in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
-       data = stream.read(CHUNK)
-       frames.append(data)
-
-   stream.stop_stream()
-   stream.close()
-   audio.terminate()
-   waveform = np.frombuffer(b''.join(frames), dtype=np.int16)
-   waveform = waveform / 32767.0
-
-   window_size = 1024
-   hop_size = 512
-    #FFT for frequency detection using STFT
-   frequencies, times, Zxx = stft(waveform, fs=RATE, nperseg=window_size, noverlap=window_size - hop_size)
-   magnitude_threshold = 0.0001 
-   received_message = ""
-   for i, time in enumerate(times):
-       if np.isclose(time % 1, 0, atol=hop_size/RATE):  
-           magnitudes = np.abs(Zxx[:, i])
-           detected_indices = np.where(magnitudes > magnitude_threshold)[0]
-           if detected_indices.size > 0:
-               detected_freqs = frequencies[detected_indices]
-               max_freq = np.max(detected_freqs)
-           else:
-               max_freq = 0 
-
-           if max_freq > 7000:
-               received_message += "1"
-           else:
-               received_message += "0"
-
-   return received_message
+            # Apply STFT (Short-Time Fourier Transform)
+            f, t, Zxx = stft(audio_data, fs=RATE, nperseg=CHUNK)
+            magnitudes = np.abs(Zxx)
+            detected_indices = np.where(magnitudes > THRESHOLD)[0]
+            if detected_indices.size > 0:
+                detected_freqs = f[detected_indices]
+                max_freq = np.max(detected_freqs)
+            else:
+                max_freq = 0
+            if max_freq > 12000:
+                bitString += "1"
+            elif max_freq > 7000:
+                bitString += "0"
+            else:
+                bitString += "."
+    return bitString
 
 
 def getInfo(received_message , myMAC):
@@ -94,7 +177,7 @@ def getInfo(received_message , myMAC):
 
     if(receiverMAC != myMAC):
         isMyMsg = False
-    if(mod2div(sentMessage,GENERATOR) != "0" * (len(GENERATOR) - 1)):
+    if(gen.mod2div(sentMessage,GENERATOR) != "0" * (len(GENERATOR) - 1)):
         collision = True
 
     return [isMyMsg , collision , lenBits , lengthOfMessage , senderMAC , receiverMAC , sentMessage]
