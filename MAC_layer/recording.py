@@ -4,7 +4,6 @@ from scipy.signal import stft
 import numpy as np
 import pyaudio
 import wave
-from listener import MAC
 from generator import mod2div , sendMsg
 
 # Parameters for recording
@@ -32,28 +31,8 @@ def sendACK(senderMAC , recieverMAC):
     sendMsg(finalMessage)
 
 #carrier sense
-def carrierSense(threshold=0.001):
-    audio = pyaudio.PyAudio()
-    stream = audio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
-    
-    # Listen for a short time to detect any signal
-    data = stream.read(CHUNK)
-    waveform = np.frombuffer(data, dtype=np.int16)
-    waveform = waveform / 32767.0  # Normalize the waveform
-
-    # Check energy in the signal
-    energy = np.sum(np.square(waveform)) / len(waveform)
-    stream.stop_stream()
-    stream.close()
-    audio.terminate()
-
-    if energy > threshold:
-        print("Channel busy")
-        return False  # Channel is busy
-    else:
-        print("Channel free")
-        return True  # Channel is free
-
+def carrierSense():
+    return False
 
 #listen function
 def listenMsg():
@@ -95,7 +74,7 @@ def listenMsg():
    return received_message
 
 
-def getInfo(received_message):
+def getInfo(received_message , myMAC):
     n = len(received_message)
     i = 0
     while(i<n):
@@ -113,7 +92,7 @@ def getInfo(received_message):
     isMyMsg = True
     collision = False
 
-    if(receiverMAC != MAC):
+    if(receiverMAC != myMAC):
         isMyMsg = False
     if(mod2div(sentMessage,GENERATOR) != "0" * (len(GENERATOR) - 1)):
         collision = True

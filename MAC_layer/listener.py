@@ -1,5 +1,6 @@
 import keyboard
 from generator import addPreamble , sendMsg , encode_data
+from recording import sendACK , carrierSense , listenMsg , getInfo
 import time
 
 # input
@@ -39,7 +40,6 @@ def on_key_event(e):
             SendQueue.append(msg) 
             InitQueue.pop(0) 
             print(f"Message added to send queue {msgIdx} : {msg}")
-            sendMsg(msg)
         else:
             print("You sent all the messages")
 
