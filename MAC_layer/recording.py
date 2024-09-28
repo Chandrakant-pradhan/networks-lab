@@ -32,31 +32,44 @@ def sendACK(senderMAC , recieverMAC):
     sendMsg(finalMessage)
 
 #carrier sense
-def carrierSense():
-    return False
+def carrierSense(threshold=0.001):
+    audio = pyaudio.PyAudio()
+    stream = audio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
+    
+    # Listen for a short time to detect any signal
+    data = stream.read(CHUNK)
+    waveform = np.frombuffer(data, dtype=np.int16)
+    waveform = waveform / 32767.0  # Normalize the waveform
+
+    # Check energy in the signal
+    energy = np.sum(np.square(waveform)) / len(waveform)
+    stream.stop_stream()
+    stream.close()
+    audio.terminate()
+
+    if energy > threshold:
+        print("Channel busy")
+        return False  # Channel is busy
+    else:
+        print("Channel free")
+        return True  # Channel is free
+
 
 #listen function
 def listenMsg():
    audio = pyaudio.PyAudio()
    stream = audio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
    frames = []
+
    for _ in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
        data = stream.read(CHUNK)
        frames.append(data)
+
    stream.stop_stream()
    stream.close()
    audio.terminate()
-
-   with wave.open(OUTPUT_FILENAME, 'wb') as wf:
-       wf.setnchannels(CHANNELS)
-       wf.setsampwidth(audio.get_sample_size(FORMAT))
-       wf.setframerate(RATE)
-       wf.writeframes(b''.join(frames))
-
-   with wave.open(OUTPUT_FILENAME, 'rb') as wf:
-       n_frames = wf.getnframes()
-       waveform = np.frombuffer(wf.readframes(n_frames), dtype=np.int16)
-       waveform = waveform / 32767.0 
+   waveform = np.frombuffer(b''.join(frames), dtype=np.int16)
+   waveform = waveform / 32767.0
 
    window_size = 1024
    hop_size = 512

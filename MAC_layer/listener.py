@@ -1,6 +1,5 @@
 import keyboard
 from generator import addPreamble , sendMsg , encode_data
-from recording import sendACK , listenMsg , getInfo , carrierSense
 import time
 
 # input
@@ -40,27 +39,12 @@ def on_key_event(e):
             SendQueue.append(msg) 
             InitQueue.pop(0) 
             print(f"Message added to send queue {msgIdx} : {msg}")
+            sendMsg(msg)
         else:
             print("You sent all the messages")
 
 keyboard.on_press(on_key_event)
 
 while True:
-    #carrier sense
-    #if no one then wait for 9.6 micro second
-      #else continue , again go to carrier sense
-    
-    #try sending the front of the send queue using generator.py
-    #use sendMsg(sendQueue.front())
-    #RECIEVER SIDE
-    #recieved on the other end but message altered (check by crc)
-    #then no ack sent
-      #else ack sent 
-
-    #SENDER SIDE
-    #if got the ack then horrah continue and pop the message out of 
-    #send queue
-    #if not the tera kat gya wait for random amount then continue
-
     time.sleep(5)
     print("hi")

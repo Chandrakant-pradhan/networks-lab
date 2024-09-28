@@ -80,14 +80,9 @@ def bitstring_to_waveform(bitstring, sample_rate, duration, freq1, freq0, amplit
 #send message
 def sendMsg(message):
     waveform = bitstring_to_waveform(message, sample_rate, duration, frequency1, frequency0, amplitude)
-    waveform = np.int16(waveform * 32767)
-    filename = "output_generator.wav"
-    with wave.open(filename, 'wb') as wf:
-        wf.setnchannels(1)
-        wf.setsampwidth(2)  
-        wf.setframerate(sample_rate)
-        wf.writeframes(waveform.tobytes())
-    
+    waveform = np.int16(waveform * 32767)  # Convert to int16 for pyaudio
+
+    # Play the waveform directly without saving it to a file
     p = pyaudio.PyAudio()
     stream = p.open(format=pyaudio.paInt16,
                     channels=1,
@@ -98,4 +93,3 @@ def sendMsg(message):
     stream.stop_stream()
     stream.close()
     p.terminate()
-    print(f"Audio has been saved to {filename} and played back.")
