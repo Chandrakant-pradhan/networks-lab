@@ -40,7 +40,7 @@ def on_key_event(e):
             print(f"Message added to send queue : {msgString} to {dest_MAC}")
         else:
             print("You sent all the messages")
-
+                
 keyboard.on_press(on_key_event)
 
 while True:
@@ -48,7 +48,7 @@ while True:
     carrier_busy = rec.carrierSense(waitTime)
     if(carrier_busy):
         rec.listenMsg(rec.MAX_WAIT)
-    elif(SendQueue.empty()):
+    elif(len(SendQueue) == 0):
         continue
     else:
         msg = SendQueue[0]

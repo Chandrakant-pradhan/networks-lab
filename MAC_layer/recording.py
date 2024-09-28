@@ -20,7 +20,7 @@ GENERATOR = "010111010111"
 DIFS = 5
 SIFS = 0.5
 CARRIER_BUSY = False
-N_rand = 0
+N = 0
 MAX_WAIT = 10
 MAC = 1 # Change this !! 
 
@@ -40,6 +40,7 @@ def sendACK(senderMAC , recieverMAC):
     gen.sendMsg(finalMessage)
 
 def waitACK(dest_MAC, waitTime = SIFS):
+    global N
     audio = pyaudio.PyAudio()
     stream = audio.open(format=FORMAT, channels=CHANNELS,
                         rate=RATE, input=True,
@@ -72,19 +73,20 @@ def waitACK(dest_MAC, waitTime = SIFS):
             elif max_freq > 7000:
                 ACK += "0"
     if not len(ACK) == 4:
-        N_rand = N_rand + 1
+        N = N + 1
         return False
     else:
         sender = ACK[0:2]
         receiver = ACK[2:]
         if not (sender == gen.decTobitstring(MAC) and receiver == gen.decTobitstring(dest_MAC)):
-            N_rand = N_rand + 1
+            N = N + 1
             return False
         return True
 
 
 #carrier sense
 def carrierSense(waitTime):
+    global N
     audio = pyaudio.PyAudio()
     stream = audio.open(format=FORMAT, channels=CHANNELS,
                         rate=RATE, input=True,
@@ -113,11 +115,13 @@ def carrierSense(waitTime):
                 max_freq = 0
             if max_freq > 12000:
                 print("Carrier is busy 😭. Received a 1")
-                CARRIER_BUSY = True; N += 1
+                CARRIER_BUSY = True
+                N = N + 1
                 return False
             elif max_freq > 7000:
                 print("Carrier is busy 😭. Received a 0")
-                CARRIER_BUSY = True; N += 1
+                CARRIER_BUSY = True
+                N = N + 1
                 return False
     return True
 
