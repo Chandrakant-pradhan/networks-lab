@@ -81,7 +81,7 @@ def bitstring_to_waveform(bitstring, sample_rate, duration, freq1, freq0, amplit
 def sendMsg(message):
     waveform = bitstring_to_waveform(message, sample_rate, duration, frequency1, frequency0, amplitude)
     waveform = np.int16(waveform * 32767)
-    filename = "output.wav"
+    filename = "output_generator.wav"
     with wave.open(filename, 'wb') as wf:
         wf.setnchannels(1)
         wf.setsampwidth(2)  
