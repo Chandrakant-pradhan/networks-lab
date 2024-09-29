@@ -48,7 +48,8 @@ while True:
     print("wait time:" ,waitTime)
     carrier_busy = rec.carrierSense(waitTime)
     if(carrier_busy):
-        rec.listenMsg(rec.MAX_WAIT)
+        msg = rec.listenMsg(rec.MAX_WAIT)
+        rec.getInfo(msg,rec.MAC)
     elif(len(SendQueue) == 0):
         continue
     else:
