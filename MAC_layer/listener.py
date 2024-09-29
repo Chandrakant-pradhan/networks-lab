@@ -32,7 +32,7 @@ for i in range(howManyMessage):
 # Function to handle key events
 def on_key_event(e):
     if e.name in ['enter', 'return']: 
-        if not InitQueue.empty:
+        if len(InitQueue) > 0:
             msg = InitQueue.pop(0) 
             msgString = msg["msg"]
             dest_MAC = msg["destMAC"]
