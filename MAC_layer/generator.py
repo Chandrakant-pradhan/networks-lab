@@ -4,10 +4,10 @@ import wave
 
 #Parameters for the audio
 sample_rate = 88200  
-duration = 1     
-frequency1 = 8000 
-frequency0 = 4000 
-amplitude = 0.5     
+duration = 0.5 #change this!    
+frequency1 = 8000 #change this!
+frequency0 = 4000 #change this!
+amplitude = 0.8     #change this !
 GENERATOR = "010111010111"
 
 #num to string

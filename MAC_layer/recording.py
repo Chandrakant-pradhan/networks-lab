@@ -4,25 +4,27 @@ from scipy.signal import stft
 import numpy as np
 import pyaudio
 import wave
+from timeit import default_timer as timer
 import generator as gen
+
+# IMPLEMENT NEW!!!!!!!!!!!!!!!!!
 
 # Parameters for recording
 FORMAT = pyaudio.paInt16  
 CHANNELS = 1  
 RATE = 88200 
 CHUNK = 1024  
-BIT_INTERVAL = 0.1
+BIT_INTERVAL = 0.5
 CHUNKS_PER_INTERVAL = int(RATE * BIT_INTERVAL / CHUNK) 
 THRESHOLD = 0.0001   
 GENERATOR = "010111010111"
 
 # For CSMA Protocol
-DIFS = 1
-SIFS = 0.5
-CARRIER_BUSY = False
+DIFS = 5
+SIFS = 2
 N = 0
-MAX_WAIT = 10
-MAC = 1 # Change this !! 
+MAX_WAIT = 25
+MAC = 2 # Change this !! 
 
 #utility for string to number
 def strToDec(s):
@@ -60,8 +62,8 @@ def waitACK(dest_MAC, waitTime = SIFS):
             audio_data = np.frombuffer(combined_data, dtype=np.int16)
 
             # Apply STFT (Short-Time Fourier Transform)
-            f, t, Zxx = stft(audio_data, fs=RATE, nperseg=CHUNK)
-            magnitudes = np.abs(Zxx)
+            f, t, Zxx = stft(audio_data, fs=RATE, nperseg=CHUNK,)
+            magnitudes = np.abs(Zxx[:,-1])
             detected_indices = np.where(magnitudes > THRESHOLD)[0]
             if detected_indices.size > 0:
                 detected_freqs = f[detected_indices]
@@ -69,7 +71,7 @@ def waitACK(dest_MAC, waitTime = SIFS):
             else:
                 max_freq = 0
                 break
-            if max_freq > 12000:
+            if max_freq > 14000:
                 ACK += "1"
             elif max_freq > 7000:
                 ACK += "0"
@@ -116,19 +118,20 @@ def carrierSense(waitTime):
                 max_freq = np.max(detected_freqs)
             else:
                 max_freq = 0
-            if max_freq > 12000:
+            if max_freq > 14000:
                 print(max_freq)
                 print("Carrier is busy 😭. Received a 1")
-                CARRIER_BUSY = True
                 N = N + 1
                 return True
-            elif max_freq > 10000:
+            elif max_freq > 7000:
                 print(max_freq)
                 print("Carrier is busy 😭. Received a 0")
-                CARRIER_BUSY = True
                 N = N + 1
                 return True
     print("All clear dude 😎")
+    stream.stop_stream()
+    stream.close()
+    audio.terminate()
     return False
 
 
@@ -138,35 +141,48 @@ def listenMsg(waitTime):
     stream = audio.open(format=FORMAT, channels=CHANNELS,
                         rate=RATE, input=True,
                         frames_per_buffer=CHUNK)
-    print("Carrier Sensing. Wait ...")
+    print("Clock Started and Listening for message ...")
+    start = timer()
     frames = []
     bitString = ""
     for _ in range(0, int(RATE / CHUNK * waitTime)):
         data = stream.read(CHUNK)
         frames.append(data)
-        if len(frames) >= CHUNKS_PER_INTERVAL:
+        now = timer()
+        if now - start > BIT_INTERVAL:
+            start = np.floor(now * 10) / 10
+            print(now)
             # Concatenate the chunks in the buffer
             combined_data = b''.join(frames)
-            frames = []
             
             # Convert the byte data to NumPy array for processing
             audio_data = np.frombuffer(combined_data, dtype=np.int16)
 
+            audio_data = audio_data / 32767.0
+
             # Apply STFT (Short-Time Fourier Transform)
-            f, t, Zxx = stft(audio_data, fs=RATE, nperseg=CHUNK)
-            magnitudes = np.abs(Zxx)
+            f, t, Zxx = stft(audio_data, fs=RATE, nperseg= 1024, noverlap=512)
+            magnitudes = np.abs(Zxx[:,-1])
             detected_indices = np.where(magnitudes > THRESHOLD)[0]
             if detected_indices.size > 0:
                 detected_freqs = f[detected_indices]
                 max_freq = np.max(detected_freqs)
             else:
                 max_freq = 0
-            if max_freq > 12000:
+            if max_freq > 7000:
                 bitString += "1"
-            elif max_freq > 7000:
+                print("max freq:" , max_freq)
+                print("1")
+            elif max_freq > 3000:
                 bitString += "0"
+                print("max freq:" , max_freq)
+                print("0")
             else:
                 bitString += "."
+                print(".")
+    stream.stop_stream()
+    stream.close()
+    audio.terminate()
     return bitString
 
 
