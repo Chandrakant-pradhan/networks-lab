@@ -45,6 +45,7 @@ keyboard.on_press(on_key_event)
 
 while True:
     waitTime = rec.DIFS + random.randrange(0,2 ** rec.N) * rec.BIT_INTERVAL
+    print("wait time:" ,waitTime)
     carrier_busy = rec.carrierSense(waitTime)
     if(carrier_busy):
         rec.listenMsg(rec.MAX_WAIT)

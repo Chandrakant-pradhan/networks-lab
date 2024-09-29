@@ -17,7 +17,7 @@ THRESHOLD = 0.0001
 GENERATOR = "010111010111"
 
 # For CSMA Protocol
-DIFS = 5
+DIFS = 1
 SIFS = 0.5
 CARRIER_BUSY = False
 N = 0
@@ -49,6 +49,7 @@ def waitACK(dest_MAC, waitTime = SIFS):
     frames = []
     ACK = ""
     for _ in range(0, int(RATE / CHUNK * waitTime)):
+
         data = stream.read(CHUNK)
         frames.append(data)
         if len(frames) >= CHUNKS_PER_INTERVAL:
@@ -85,6 +86,49 @@ def waitACK(dest_MAC, waitTime = SIFS):
 
 
 #carrier sense
+# def carrierSense(waitTime):
+#     global N
+#     audio = pyaudio.PyAudio()
+#     stream = audio.open(format=FORMAT, channels=CHANNELS,
+#                         rate=RATE, input=True,
+#                         frames_per_buffer=CHUNK)
+#     print("Carrier Sensing. Wait ...")
+#     frames = []; 
+#     print("chunks,range: ", CHUNKS_PER_INTERVAL, RATE / CHUNK * waitTime)
+#     for _ in range(0, int(RATE / CHUNK * waitTime)):
+#         data = stream.read(CHUNK)
+#         frames.append(data)
+#         if len(frames) >= CHUNKS_PER_INTERVAL:
+#             # Concatenate the chunks in the buffer
+#             combined_data = b''.join(frames)
+            
+#             # Convert the byte data to NumPy array for processing
+#             audio_data = np.frombuffer(combined_data, dtype=np.int16)
+
+#             # Apply STFT (Short-Time Fourier Transform)
+#             f, t, Zxx = stft(audio_data, fs=RATE, nperseg= 1024, noverlap=512)
+#             magnitudes = np.abs(Zxx[:,-1]); 
+#             detected_indices = np.where(magnitudes > THRESHOLD)[0]
+#             if detected_indices.size > 0:
+#                 detected_freqs = f[detected_indices]
+#                 print(np.max(detected_freqs))
+#                 max_freq = np.max(detected_freqs)
+#             else:
+#                 max_freq = 0
+#             if max_freq > 12000:
+#                 print(max_freq)
+#                 print("Carrier is busy 😭. Received a 1")
+#                 CARRIER_BUSY = True
+#                 N = N + 1
+#                 return False
+#             elif max_freq > 7000:
+#                 print(max_freq)
+#                 print("Carrier is busy 😭. Received a 0")
+#                 CARRIER_BUSY = True
+#                 N = N + 1
+#                 return False
+#     print("All clear dude 😎")
+#     return True
 def carrierSense(waitTime):
     global N
     audio = pyaudio.PyAudio()
@@ -103,9 +147,11 @@ def carrierSense(waitTime):
             # Convert the byte data to NumPy array for processing
             audio_data = np.frombuffer(combined_data, dtype=np.int16)
 
+            audio_data = audio_data / 32767.0
+
             # Apply STFT (Short-Time Fourier Transform)
             f, t, Zxx = stft(audio_data, fs=RATE, nperseg= 1024, noverlap=512)
-            magnitudes = np.abs(Zxx[:i]); i += 1
+            magnitudes = np.abs(Zxx[:,-1]); i += 1
             detected_indices = np.where(magnitudes > THRESHOLD)[0]
             if detected_indices.size > 0:
                 detected_freqs = f[detected_indices]
@@ -118,15 +164,16 @@ def carrierSense(waitTime):
                 print("Carrier is busy 😭. Received a 1")
                 CARRIER_BUSY = True
                 N = N + 1
-                return False
+                return True
             elif max_freq > 10000:
                 print(max_freq)
                 print("Carrier is busy 😭. Received a 0")
                 CARRIER_BUSY = True
                 N = N + 1
-                return False
+                return True
     print("All clear dude 😎")
-    return True
+    return False
+
 
 #listen function
 def listenMsg(waitTime):

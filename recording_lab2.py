@@ -65,7 +65,7 @@ FORMAT = pyaudio.paInt16
 CHANNELS = 1  
 RATE = 88200 
 CHUNK = 1024  
-RECORD_SECONDS = 55 
+RECORD_SECONDS = 5
 OUTPUT_FILENAME = "output.wav"  
 GENERATOR = "010111010111"
 
@@ -100,10 +100,11 @@ window_size = 1024
 hop_size = 512
 
 #FFT for frequency detection using STFT
-frequencies, times, Zxx = stft(waveform, fs=RATE, nperseg=window_size, noverlap0=window_size - hop_size)
+frequencies, times, Zxx = stft(waveform, fs=RATE, nperseg=window_size, noverlap=window_size - hop_size)
 magnitude_threshold = 0.0001 
 detected_frequencies = []
 received_message = ""
+print(times)
 for i, time in enumerate(times):
     if np.isclose(time % 1, 0, atol=hop_size/RATE):  
         magnitudes = np.abs(Zxx[:, i])
