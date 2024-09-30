@@ -13,15 +13,17 @@ CHANNELS = 1
 RATE = 88200 
 CHUNK = 1024  
 BIT_INTERVAL = 0.5
-THRESHOLD = 0.00005   
+THRESHOLD = 0.000005   
 GENERATOR = "010111010111"
+FILTER1 = 19000
+FILTER0 = 14000
 
 # For CSMA Protocol
 DIFS = 5
 SIFS = 2
 N = 0
 MAX_WAIT = 60 * BIT_INTERVAL
-MAC = 2  
+MAC = 3
 
 #utility for string to number
 def strToDec(s,nbits):
@@ -82,11 +84,11 @@ def carrierSense(waitTime):
                 max_freq = np.max(detected_freqs)
             else:
                 max_freq = 0
-            if max_freq > 10000:
+            if max_freq > FILTER1:
                 print("Carrier is busy 😭. Received a 1")
                 N = N + 1
                 return True
-            elif max_freq > 5000:
+            elif max_freq > FILTER0:
                 print(max_freq)
                 print("Carrier is busy 😭. Received a 0")
                 N = N + 1
@@ -131,9 +133,9 @@ def listenMsg(waitTime = MAX_WAIT):
                 max_freq = np.max(detected_freqs)
             else:
                 max_freq = 0 
-            if max_freq > 10000:
+            if max_freq > 15000:
                 print(f"Time {time:.2f}s: 1 (Max Frequency: {max_freq:.2f} Hz)"); received_message += "1"
-            elif max_freq > 5000:
+            elif max_freq > 7000:
                 print(f"Time {time:.2f}s: 0 (Max Frequency: {max_freq:.2f} Hz)"); received_message += "0"
             else :
                 print(f"Time {time:.2f}s: x (Max Frequency: {max_freq:.2f} Hz)")
@@ -141,6 +143,7 @@ def listenMsg(waitTime = MAX_WAIT):
     return received_message
 
 def getInfo(received_message):
+    received_message = received_message[1:] # does this help 0.00s and 0.01s???
     n = len(received_message)
     i = 0
     while(i<n):
@@ -174,5 +177,6 @@ def infoPrint(msg):
             print("Message:", msg[-1])
         else:
             print("There must be collision")
+            print("Message:", msg[-1])
     else:
         print("Not your message dude")
