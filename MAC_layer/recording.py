@@ -14,7 +14,7 @@ FORMAT = pyaudio.paInt16
 CHANNELS = 1  
 RATE = 88200 
 CHUNK = 1024  
-BIT_INTERVAL = 0.1
+BIT_INTERVAL = 0.5
 CHUNKS_PER_INTERVAL = int(RATE * BIT_INTERVAL / CHUNK) 
 THRESHOLD = 0.00005   
 GENERATOR = "010111010111"
@@ -23,14 +23,14 @@ GENERATOR = "010111010111"
 DIFS = 5
 SIFS = 2
 N = 0
-MAX_WAIT = 10
+MAX_WAIT = 60 * BIT_INTERVAL
 MAC = 2 # Change this !! 
 
 #utility for string to number
-def strToDec(s):
+def strToDec(s,nbits):
      ans = 0
      s = s[::-1]
-     for i in range(5):
+     for i in range(nbits):
          if(s[i] == '1'):
              ans += (1 << i)
      return ans
@@ -38,12 +38,15 @@ def strToDec(s):
 #send ACK
 def sendACK(senderMAC , recieverMAC):
     #both supplied as string of binaries
+    print("Sending Acknowledgement ...")
     finalMessage = senderMAC + recieverMAC
     gen.sendMsg(finalMessage)
+    print("Sent the Acknowledgement")
 
 def waitACK(dest_MAC, waitTime = SIFS):
     global N
     ACK = listenMsg(waitTime)
+    ACK = ACK.strip("x")
     if not len(ACK) == 4:
         N = N + 1
         return False
@@ -58,15 +61,17 @@ def waitACK(dest_MAC, waitTime = SIFS):
 #carrier sense
 def carrierSense(waitTime):
     global N
+    print("Carrier Sensing. Wait ...")
     received_message = listenMsg(waitTime)
     if all(char == 'x' for char in received_message):
         N = N + 1
-        return False 
+        return False
+    print("All clear dude 👍") 
     return True
 
 
 #listen function
-def listenMsg(waitTime):
+def listenMsg(waitTime = MAX_WAIT):
     audio = audio = pyaudio.PyAudio()
     stream = audio.open(format=FORMAT, channels=CHANNELS,
                         rate=RATE, input=True,
@@ -108,7 +113,7 @@ def listenMsg(waitTime):
     print("received_message:", received_message)
     return received_message
 
-def getInfo(received_message , myMAC):
+def getInfo(received_message):
     n = len(received_message)
     i = 0
     while(i<n):
@@ -118,7 +123,7 @@ def getInfo(received_message , myMAC):
             i += 1
     
     lenBits = received_message[i + 6 : i + 11]
-    lengthOfMessage = strToDec(lenBits) - 4
+    lengthOfMessage = strToDec(lenBits,5) - 4
     senderMAC = received_message[i+11 : i+13]
     receiverMAC = received_message[i+13 : i+15]
     sentMessage = received_message[i+15 : i+15 + lengthOfMessage]
@@ -126,11 +131,21 @@ def getInfo(received_message , myMAC):
     isMyMsg = True
     collision = False
 
-    if(receiverMAC != myMAC):
+    if(strToDec(receiverMAC,2) != MAC):
         isMyMsg = False
     if(gen.mod2div(sentMessage,GENERATOR) != "0" * (len(GENERATOR) - 1)):
         collision = True
 
     return [isMyMsg , collision , lenBits , lengthOfMessage , senderMAC , receiverMAC , sentMessage]
 
-
+def infoPrint(msg):
+    if (msg[0]):
+        if(not msg[1]):
+            print("Message received successfully")
+            print("Length:", msg[3])
+            print("Sender:", msg[4])
+            print("Message:", msg[-1])
+        else:
+            print("There must be collision")
+    else:
+        print("Not your message dude")
