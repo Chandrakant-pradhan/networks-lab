@@ -23,7 +23,7 @@ for i in range(howManyMessage):
     message = input(f"Enter message {i + 1}: ")
     parsedMsg = message.split()
     msgString = parsedMsg[0]
-    destMAC = parsedMsg[1]
+    destMAC = int(parsedMsg[1])
     if destMAC == -1 :
         #ignore this input
         continue
@@ -67,4 +67,3 @@ while True:
         else:
             print("Transmission failed. Trying again after some time")
             continue
-

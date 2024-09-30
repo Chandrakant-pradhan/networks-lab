@@ -7,15 +7,12 @@ import wave
 from timeit import default_timer as timer
 import generator as gen
 
-# IMPLEMENT NEW!!!!!!!!!!!!!!!!!
-
 # Parameters for recording
 FORMAT = pyaudio.paInt16  
 CHANNELS = 1  
 RATE = 88200 
 CHUNK = 1024  
 BIT_INTERVAL = 0.5
-CHUNKS_PER_INTERVAL = int(RATE * BIT_INTERVAL / CHUNK) 
 THRESHOLD = 0.00005   
 GENERATOR = "010111010111"
 
@@ -24,7 +21,7 @@ DIFS = 5
 SIFS = 2
 N = 0
 MAX_WAIT = 60 * BIT_INTERVAL
-MAC = 2 # Change this !! 
+MAC = 2  
 
 #utility for string to number
 def strToDec(s,nbits):
@@ -61,15 +58,45 @@ def waitACK(dest_MAC, waitTime = SIFS):
 #carrier sense
 def carrierSense(waitTime):
     global N
-    print("Carrier Sensing. Wait ...")
-    received_message = listenMsg(waitTime)
-    if all(char == 'x' for char in received_message):
-        N = N + 1
-        return False
-    print("All clear dude 👍") 
-    return True
-
-
+    audio = pyaudio.PyAudio()
+    stream = audio.open(format=FORMAT, channels=CHANNELS,
+                        rate=RATE, input=True,
+                        frames_per_buffer=CHUNK)
+    print("Clock Started and Listening for message ...")
+    start = timer()
+    frames = []
+    for _ in range(0, int(RATE / CHUNK * waitTime)):
+        data = stream.read(CHUNK)
+        frames.append(data)
+        now = timer()
+        if now - start > BIT_INTERVAL:
+            start = np.floor(now * 10) / 10
+            combined_data = b''.join(frames)
+            audio_data = np.frombuffer(combined_data, dtype=np.int16)
+            audio_data = audio_data / 32767.0
+            f, t, Zxx = stft(audio_data, fs=RATE, nperseg= 1024, noverlap=512)
+            magnitudes = np.abs(Zxx[:,-1])
+            detected_indices = np.where(magnitudes > THRESHOLD)[0]
+            if detected_indices.size > 0:
+                detected_freqs = f[detected_indices]
+                max_freq = np.max(detected_freqs)
+            else:
+                max_freq = 0
+            if max_freq > 10000:
+                print("Carrier is busy 😭. Received a 1")
+                N = N + 1
+                return True
+            elif max_freq > 5000:
+                print(max_freq)
+                print("Carrier is busy 😭. Received a 0")
+                N = N + 1
+                return True
+    print("All clear dude 😎")
+    stream.stop_stream()
+    stream.close()
+    audio.terminate()
+    return False
+            
 #listen function
 def listenMsg(waitTime = MAX_WAIT):
     audio = audio = pyaudio.PyAudio()
