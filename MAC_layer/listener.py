@@ -50,11 +50,10 @@ while True:
     if(carrier_busy):
         msg = rec.listenMsg(rec.MAX_WAIT)
         info = rec.getInfo(msg)
-        print("in while loop listened : ", msg)
         rec.infoPrint(info)
-        if((info[0]) and (not info[1])):
-            rec.sendACK(info[5],info[4])
-
+        if((info["isMyMsg"]) and (not info["collision"])):
+            rec.sendACK(info["recieverMAC"],info["senderMAC"])
+            
     elif(len(SendQueue) == 0):
         continue
     else:
@@ -62,7 +61,7 @@ while True:
         msgString = msg["msg"]
         destMAC = msg["destMAC"]
         gen.sendMsg(frameGenerator(msg))
-        sent = rec.waitACK(destMAC,rec.DIFS)
+        sent = rec.waitACK(destMAC,10)
         if sent:
             SendQueue.pop(0)
         else:

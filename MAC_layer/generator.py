@@ -6,8 +6,8 @@ import wave
 sample_rate = 88200  
 duration = 0.5      #change this!    
 frequency1 = 20000  #change this!
-frequency0 = 15000   #change this!
-amplitude = 0.8     #change this !
+frequency0 = 15000  #change this!
+amplitude = 0.8     #change this!
 GENERATOR = "010111010111"
 
 #num to string
@@ -79,6 +79,7 @@ def bitstring_to_waveform(bitstring, sample_rate, duration, freq1, freq0, amplit
 
 #send message
 def sendMsg(message):
+    print(message)
     waveform = bitstring_to_waveform(message, sample_rate, duration, frequency1, frequency0, amplitude)
     waveform = np.int16(waveform * 32767)  # Convert to int16 for pyaudio
 

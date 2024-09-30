@@ -15,15 +15,15 @@ CHUNK = 1024
 BIT_INTERVAL = 0.5
 THRESHOLD = 0.000005   
 GENERATOR = "010111010111"
-FILTER1 = 19000
-FILTER0 = 14000
+FILTER_1 = 19000
+FILTER_0 = 14000
 
 # For CSMA Protocol
 DIFS = 5
 SIFS = 2
 N = 0
 MAX_WAIT = 60 * BIT_INTERVAL
-MAC = 3
+MAC = 1 #<= edit MAC
 
 #utility for string to number
 def strToDec(s,nbits):
@@ -84,11 +84,11 @@ def carrierSense(waitTime):
                 max_freq = np.max(detected_freqs)
             else:
                 max_freq = 0
-            if max_freq > FILTER1:
+            if max_freq > FILTER_1:
                 print("Carrier is busy 😭. Received a 1")
                 N = N + 1
                 return True
-            elif max_freq > FILTER0:
+            elif max_freq > FILTER_0:
                 print(max_freq)
                 print("Carrier is busy 😭. Received a 0")
                 N = N + 1
@@ -123,7 +123,6 @@ def listenMsg(waitTime = MAX_WAIT):
     waveform = waveform / 32767.0 
 
     frequencies, times, Zxx = stft(waveform, fs=RATE, nperseg=1024, noverlap=512)
-    detected_frequencies = []
     for i, time in enumerate(times):
         if np.isclose(time % BIT_INTERVAL, 0, atol= 512/RATE): 
             magnitudes = np.abs(Zxx[:, i])
@@ -133,9 +132,9 @@ def listenMsg(waitTime = MAX_WAIT):
                 max_freq = np.max(detected_freqs)
             else:
                 max_freq = 0 
-            if max_freq > 15000:
+            if max_freq > FILTER_1:
                 print(f"Time {time:.2f}s: 1 (Max Frequency: {max_freq:.2f} Hz)"); received_message += "1"
-            elif max_freq > 7000:
+            elif max_freq > FILTER_0:
                 print(f"Time {time:.2f}s: 0 (Max Frequency: {max_freq:.2f} Hz)"); received_message += "0"
             else :
                 print(f"Time {time:.2f}s: x (Max Frequency: {max_freq:.2f} Hz)")
@@ -143,7 +142,6 @@ def listenMsg(waitTime = MAX_WAIT):
     return received_message
 
 def getInfo(received_message):
-    received_message = received_message[1:] # does this help 0.00s and 0.01s???
     n = len(received_message)
     i = 0
     while(i<n):
@@ -166,17 +164,16 @@ def getInfo(received_message):
     if(gen.mod2div(sentMessage,GENERATOR) != "0" * (len(GENERATOR) - 1)):
         collision = True
 
-    return [isMyMsg , collision , lenBits , lengthOfMessage , senderMAC , receiverMAC , sentMessage]
+    return {"isMyMsg" : isMyMsg , "collision" : collision , "lenBits" : lenBits , "lenMsg" : lengthOfMessage , "senderMAC" : senderMAC , "recieverMAC" : receiverMAC , "sentMsg" : sentMessage}
 
 def infoPrint(msg):
-    if (msg[0]):
-        if(not msg[1]):
+    if msg["isMyMsg"]:
+        if not msg["collision"]:
             print("Message received successfully")
-            print("Length:", msg[3])
-            print("Sender:", msg[4])
-            print("Message:", msg[-1])
+            print("Length:", msg["lenMsg"])
+            print("Sender:", msg["senderMAC"])
+            print("Message:", msg["sentMsg"])
         else:
-            print("There must be collision")
-            print("Message:", msg[-1])
+            print("There must be a collision")
     else:
         print("Not your message dude")
