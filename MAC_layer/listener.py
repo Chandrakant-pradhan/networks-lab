@@ -27,7 +27,8 @@ for i in range(howManyMessage):
     if destMAC == -1 :
         #ignore this input
         continue
-    InitQueue.append({"msg": msgString, "destMAC": destMAC}) 
+    else:
+        InitQueue.append({"msg": msgString, "destMAC": destMAC}) 
 
 # Function to handle key events
 def on_key_event(e):
@@ -49,21 +50,31 @@ while True:
     carrier_busy = rec.carrierSense(waitTime)
     if(carrier_busy):
         msg = rec.listenMsg(rec.MAX_WAIT)
+        print(msg)
         info = rec.getInfo(msg)
         rec.infoPrint(info)
         if((info["isMyMsg"]) and (not info["collision"])):
             rec.sendACK(info["recieverMAC"],info["senderMAC"])
             
     elif(len(SendQueue) == 0):
-        continue
+        continue  
+
     else:
         msg = SendQueue[0]
         msgString = msg["msg"]
         destMAC = msg["destMAC"]
-        gen.sendMsg(frameGenerator(msg))
-        sent = rec.waitACK(destMAC,10)
+        if(destMAC == 0):
+            for j in range(1 , 3):
+                if( j != rec.MAC):
+                    msg["destMAC"] = j
+                    gen.sendMsg(frameGenerator(msg))
+                    break
+        else:
+             gen.sendMsg(frameGenerator(msg))
+
+        sent = rec.waitACK(msg["destMAC"],rec.DIFS)
         if sent:
-            SendQueue.pop(0)
+            SendQueue.pop(0)     
         else:
             print("Transmission failed. Trying again after some time")
             continue

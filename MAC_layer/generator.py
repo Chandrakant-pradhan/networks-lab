@@ -5,9 +5,10 @@ import wave
 #Parameters for the audio
 sample_rate = 88200  
 duration = 0.5      #change this!    
-frequency1 = 20000  #change this!
-frequency0 = 15000  #change this!
-amplitude = 0.8     #change this!
+frequency1 = 12000  #change this!
+frequency0 = 6000  #change this!
+frequencyx = 50
+amplitude = 0.5    #change this!
 GENERATOR = "010111010111"
 
 #num to string
@@ -68,22 +69,42 @@ def addPreamble(bitstring , senderMAC , destMAC):
     return message
 
 #Convert bitstring to waveform
-def bitstring_to_waveform(bitstring, sample_rate, duration, freq1, freq0, amplitude):
+def bitstring_to_waveform(bitstring, sample_rate, duration, freq1, freq0, freqx, amplitude):
     t = np.linspace(0, duration, int(sample_rate * duration), endpoint=False)
-    waveform = np.concatenate([
-        amplitude * np.sin(2 * np.pi * freq1 * t) if bit == '1' 
-        else -1 *  amplitude * np.sin(2 * np.pi * freq0 * t)
-        for bit in bitstring
-    ])
+    waveform_parts = []
+    for bit in bitstring:
+        if bit == '1':
+            waveform_part = amplitude * np.sin(2 * np.pi * freq1 * t)
+        elif bit == '0':
+            waveform_part = amplitude * np.sin(2 * np.pi * freq0 * t)
+        elif bit == 'x':
+            waveform_part = amplitude * np.sin(2 * np.pi * freqx * t)
+
+        waveform_parts.append(waveform_part)
+    
+    waveform = np.concatenate(waveform_parts)
     return waveform
+
+
+def convertMessage(message):
+    result = ""
+    for bit in message:
+        result += f"x{bit}"
+    result += "x"
+    return result
 
 #send message
 def sendMsg(message):
     print(message)
-    waveform = bitstring_to_waveform(message, sample_rate, duration, frequency1, frequency0, amplitude)
-    waveform = np.int16(waveform * 32767)  # Convert to int16 for pyaudio
-
-    # Play the waveform directly without saving it to a file
+    message = convertMessage(message)
+    waveform = bitstring_to_waveform(message, sample_rate, duration, frequency1, frequency0 , frequencyx, amplitude)
+    waveform = np.int16(waveform * 32767)  
+    # filename = "output(12000-6000)_test2.wav"
+    # with wave.open(filename, 'wb') as wf:
+    #     wf.setnchannels(1)
+    #     wf.setsampwidth(2)  
+    #     wf.setframerate(sample_rate)
+    #     wf.writeframes(waveform.tobytes())
     p = pyaudio.PyAudio()
     stream = p.open(format=pyaudio.paInt16,
                     channels=1,

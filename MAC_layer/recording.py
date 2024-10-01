@@ -13,16 +13,16 @@ CHANNELS = 1
 RATE = 88200 
 CHUNK = 1024  
 BIT_INTERVAL = 0.5
-THRESHOLD = 0.000005   
+THRESHOLD = 0.0005   
 GENERATOR = "010111010111"
-FILTER_1 = 19000
-FILTER_0 = 14000
+FILTER_1 = 11000
+FILTER_0 = 5000
 
-# For CSMA Protocol
+# For CSMA Protocol(change)
 DIFS = 5
 SIFS = 2
-N = 0
-MAX_WAIT = 60 * BIT_INTERVAL
+N = 1
+MAX_WAIT = 110 * BIT_INTERVAL
 MAC = 1 #<= edit MAC
 
 #utility for string to number
@@ -36,26 +36,53 @@ def strToDec(s,nbits):
 
 #send ACK
 def sendACK(senderMAC , recieverMAC):
-    #both supplied as string of binaries
     print("Sending Acknowledgement ...")
     finalMessage = senderMAC + recieverMAC
     gen.sendMsg(finalMessage)
     print("Sent the Acknowledgement")
 
-def waitACK(dest_MAC, waitTime = SIFS):
+def waitACK(dest_MAC, waitTime):
     global N
-    ACK = listenMsg(waitTime)
-    ACK = ACK.strip("x")
-    if not len(ACK) == 4:
-        N = N + 1
-        return False
-    else:
-        sender = ACK[0:2]
-        receiver = ACK[2:]
-        if not (sender == gen.decTobitstring(MAC) and receiver == gen.decTobitstring(dest_MAC)):
-            N = N + 1
-            return False
-        return True
+    audio = pyaudio.PyAudio()
+    stream = audio.open(format=FORMAT, channels=CHANNELS,
+                        rate=RATE, input=True,
+                        frames_per_buffer=CHUNK)
+    
+    start = timer()
+    frames = []
+    ACK = ""
+    for _ in range(0, int(RATE / CHUNK * waitTime)):
+        data = stream.read(CHUNK)
+        frames.append(data)
+        now = timer()
+        if now - start > BIT_INTERVAL:
+            start = np.floor(now * 10) / 10
+            combined_data = b''.join(frames)
+            frames = []
+            audio_data = np.frombuffer(combined_data, dtype=np.int16)
+            audio_data = audio_data / 32767.0
+            f, t, Zxx = stft(audio_data, fs=RATE, nperseg= 1024, noverlap=512)
+            magnitudes = np.abs(Zxx[:,-1])
+            detected_indices = np.where(magnitudes > THRESHOLD)[0]
+            if detected_indices.size > 0:
+                detected_freqs = f[detected_indices]
+                max_freq = np.max(detected_freqs)
+            else:
+                max_freq = 0
+            if max_freq > FILTER_1:
+                ACK += "1"
+            elif max_freq > FILTER_0:
+                ACK += "0"
+            
+            if len(ACK) == 4:
+                sender = ACK[0:2]
+                receiver = ACK[2:]
+                if not (sender == gen.decTobitstring(MAC) and receiver == gen.decTobitstring(dest_MAC)):
+                    N = N + 1
+                    return False
+                return True  
+    return False
+    
 
 #carrier sense
 def carrierSense(waitTime):
@@ -74,6 +101,7 @@ def carrierSense(waitTime):
         if now - start > BIT_INTERVAL:
             start = np.floor(now * 10) / 10
             combined_data = b''.join(frames)
+            frames = []
             audio_data = np.frombuffer(combined_data, dtype=np.int16)
             audio_data = audio_data / 32767.0
             f, t, Zxx = stft(audio_data, fs=RATE, nperseg= 1024, noverlap=512)
@@ -85,6 +113,7 @@ def carrierSense(waitTime):
             else:
                 max_freq = 0
             if max_freq > FILTER_1:
+                print(max_freq)
                 print("Carrier is busy 😭. Received a 1")
                 N = N + 1
                 return True
@@ -93,12 +122,17 @@ def carrierSense(waitTime):
                 print("Carrier is busy 😭. Received a 0")
                 N = N + 1
                 return True
+            else:
+                print(max_freq)
+                print("X")
+            
     print("All clear dude 😎")
     stream.stop_stream()
     stream.close()
     audio.terminate()
     return False
             
+
 #listen function
 def listenMsg(waitTime = MAX_WAIT):
     audio = audio = pyaudio.PyAudio()
@@ -132,16 +166,24 @@ def listenMsg(waitTime = MAX_WAIT):
                 max_freq = np.max(detected_freqs)
             else:
                 max_freq = 0 
+
             if max_freq > FILTER_1:
                 print(f"Time {time:.2f}s: 1 (Max Frequency: {max_freq:.2f} Hz)"); received_message += "1"
             elif max_freq > FILTER_0:
                 print(f"Time {time:.2f}s: 0 (Max Frequency: {max_freq:.2f} Hz)"); received_message += "0"
             else :
-                print(f"Time {time:.2f}s: x (Max Frequency: {max_freq:.2f} Hz)")
+                print(f"Time {time:.2f}s: x (Max Frequency: {max_freq:.2f} Hz)"); received_message += "x"
+
     print("received_message:", received_message)
     return received_message
 
+def strip_and_remove_x(bitstring):
+    stripped_bitstring = bitstring.strip('x')
+    cleaned_bitstring = stripped_bitstring.replace('x', '')
+    return cleaned_bitstring
+
 def getInfo(received_message):
+    received_message = strip_and_remove_x(received_message)
     n = len(received_message)
     i = 0
     while(i<n):
